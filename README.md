@@ -1,8 +1,6 @@
 ---
 # JSON Viewer
 
-## License
-
 A powerful and user-friendly **JSON Viewer** tool designed to help developers visualize, debug, and analyze JSON data effortlessly. Paste your JSON content or fetch it from a URL, and the tool will format and display it in a clean, interactive interface.
 ---
 
@@ -121,7 +119,7 @@ Built with ❤️ using [Next.js](https://nextjs.org/) and [Tailwind CSS](https:
 
 - **GitHub**: [@nesaranaeem](https://github.com/nesaranaeem)
 - **Website**: [https://nesaran.com](https://nesaran.com)
-- **Social Media**: [@nesaranaeem](https://twitter.com/nesaranaeem) (Twitter, LinkedIn, etc.)
+- **Facebook**: [@nesaranaeem](https://facebook.com/nesaranaeem)
 
 ---
 

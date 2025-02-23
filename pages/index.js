@@ -154,7 +154,7 @@ const Home = () => {
         <meta property="og:title" content={i18n.t("title")} />
         <meta property="og:description" content={i18n.t("metaDescription")} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://your-json-viewer-url.com" />
+        <meta property="og:url" content="https://json-viewer-app.vercel.app" />
       </Head>
 
       <Header
