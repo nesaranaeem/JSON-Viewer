@@ -9,9 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "ace-builds": "^1.39.0",
+    "axios": "^1.7.9",
+    "i18n-js": "^4.5.1",
+    "next": "15.1.7",
     "react": "^19.0.0",
+    "react-ace": "^14.0.1",
     "react-dom": "^19.0.0",
-    "next": "15.1.7"
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "postcss": "^8",

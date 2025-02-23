@@ -1,114 +1,293 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { useState, useEffect } from "react";
+import { FaLink, FaCode, FaEye } from "react-icons/fa";
+import axios from "axios";
+import Head from "next/head";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import JsonViewer from "../components/JsonViewer";
+import LanguageModal from "../components/LanguageModal";
+import JsonEditor from "../components/JsonEditor";
+import Loader from "../components/Loader";
+import i18n, { setLocale } from "../lib/i18n";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const Home = () => {
+  const [inputType, setInputType] = useState("json");
+  const [jsonInput, setJsonInput] = useState("");
+  const [urlInput, setUrlInput] = useState("");
+  const [parsedJson, setParsedJson] = useState(null);
+  const [error, setError] = useState(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [headers, setHeaders] = useState("");
+  const [userAgent, setUserAgent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        setIsDarkMode(true);
+        document.documentElement.classList.add("dark");
+      }
+      if (!localStorage.getItem("language")) {
+        setShowLanguageModal(true);
+      }
+    }
+  }, []);
 
-export default function Home() {
+  // Function to handle JSON input changes
+  const handleJsonChange = (value) => {
+    setJsonInput(value);
+    setShowPreview(false);
+    try {
+      if (!value.trim()) {
+        setParsedJson(null);
+        setError(null);
+      } else {
+        const parsed = JSON.parse(value);
+        setParsedJson(parsed);
+        setError(null);
+      }
+    } catch (err) {
+      setParsedJson(null);
+      setError(i18n.t("invalidJson"));
+    }
+  };
+
+  // Function to handle URL input changes
+  const handleUrlChange = (e) => {
+    const url = e.target.value;
+    setUrlInput(url);
+    setError(null);
+    setShowPreview(false);
+
+    // Validate URL format
+    if (url.trim() && !/^https?:\/\//i.test(url)) {
+      setError(i18n.t("invalidUrlFormat"));
+    }
+  };
+
+  // Fetch JSON data from URL
+  const fetchJson = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const fetchOptions = {
+        headers: headers ? JSON.parse(headers) : {},
+      };
+      if (userAgent) fetchOptions.headers["User-Agent"] = userAgent;
+      const response = await axios.get(urlInput, fetchOptions);
+      if (typeof response.data !== "object" || response.data === null) {
+        throw new Error("Invalid JSON");
+      }
+      setParsedJson(response.data);
+    } catch (err) {
+      setParsedJson(null);
+      setError(
+        err.message === "Invalid JSON"
+          ? i18n.t("invalidUrlJson")
+          : `${i18n.t("fetchError")}: ${err.message}`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Change language and update SEO tags dynamically
+  const changeLanguage = (lang) => {
+    setLoading(true);
+    setLocale(lang); // Persist to localStorage and update i18n.locale via lib/i18n
+    setTimeout(() => setLoading(false), 500); // Loader feedback
+  };
+
+  // Toggle theme
+  const changeTheme = (theme) => {
+    if (theme === "dark") {
+      setIsDarkMode(true);
+      document.documentElement.classList.add("dark");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("theme", "dark");
+      }
+    } else {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove("dark");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("theme", "light");
+      }
+    }
+  };
+
+  // Toggle between JSON input and URL input
+  const toggleInputType = () => {
+    setInputType((prev) => (prev === "json" ? "url" : "json"));
+    setError(null);
+    setParsedJson(null);
+    setJsonInput("");
+    setUrlInput("");
+    setShowAdvanced(false);
+    setLoading(false);
+    setShowPreview(false);
+  };
+
+  // Handle view button click
+  const handleViewClick = () => {
+    if (inputType === "json" && parsedJson) {
+      setShowPreview(true);
+    } else if (inputType === "url" && urlInput.trim()) {
+      fetchJson().then(() => setShowPreview(true));
+    }
+  };
+
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Dynamic SEO Tags */}
+      <Head>
+        <title>{i18n.t("title")}</title>
+        <meta name="description" content={i18n.t("metaDescription")} />
+        <meta
+          name="keywords"
+          content="JSON Viewer, JSON Formatter, JSON Parser"
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              pages/index.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        <meta name="author" content="Nesar Ahmed Naeem" />
+        <meta property="og:title" content={i18n.t("title")} />
+        <meta property="og:description" content={i18n.t("metaDescription")} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://your-json-viewer-url.com" />
+      </Head>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+      <Header
+        changeLanguage={changeLanguage}
+        setLoading={setLoading}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+      />
+
+      <main className="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <button
+              onClick={toggleInputType}
+              className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md"
+              disabled={loading}
+            >
+              {inputType === "json" ? (
+                <>
+                  <FaLink className="mr-2" />
+                  {i18n.t("url")}
+                </>
+              ) : (
+                <>
+                  <FaCode className="mr-2" />
+                  {i18n.t("pasteData")}
+                </>
+              )}
+            </button>
+          </div>
+
+          {inputType === "json" ? (
+            <JsonEditor
+              value={jsonInput}
+              onChange={handleJsonChange}
+              error={error}
+              isDarkMode={isDarkMode}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {i18n.t("urlInstruction")}
+              </p>
+              <input
+                type="text"
+                className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-700 ${
+                  error ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder={i18n.t("urlPlaceholder")}
+                value={urlInput}
+                onChange={handleUrlChange}
+                disabled={loading}
+              />
+              {error && inputType === "url" && !loading && (
+                <p className="text-red-500 flex items-center justify-center">
+                  <span className="mr-2">⚠️</span> {error}
+                </p>
+              )}
+              <button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center text-blue-500 hover:text-blue-600 dark:text-blue-400 transition-colors"
+                disabled={loading}
+              >
+                {showAdvanced ? i18n.t("hideAdvanced") : i18n.t("showAdvanced")}
+              </button>
+              {showAdvanced && (
+                <div className="space-y-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg shadow">
+                  <div>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                      {i18n.t("headers")}
+                    </label>
+                    <textarea
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      rows="3"
+                      value={headers}
+                      onChange={(e) => setHeaders(e.target.value)}
+                      placeholder='{"Authorization": "Bearer token"}'
+                      disabled={loading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1 dark:text-gray-300">
+                      {i18n.t("userAgent")}
+                    </label>
+                    <input
+                      className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={userAgent}
+                      onChange={(e) => setUserAgent(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-center">
+            <button
+              onClick={handleViewClick}
+              className="flex items-center px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md"
+              disabled={
+                loading ||
+                (inputType === "json" && !parsedJson) ||
+                (inputType === "url" && (!urlInput.trim() || error))
+              }
+            >
+              <FaEye className="mr-2" />
+              {i18n.t("view")}
+            </button>
+          </div>
+
+          {loading && <Loader />}
+          {showPreview && parsedJson && !loading && (
+            <div>
+              <h2 className="text-xl font-semibold mb-2 dark:text-white text-center">
+                {i18n.t("preview")}
+              </h2>
+              <JsonViewer data={parsedJson} />
+            </div>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      <Footer />
+      {showLanguageModal && (
+        <LanguageModal
+          setLanguage={changeLanguage}
+          setTheme={changeTheme}
+          onClose={() => setShowLanguageModal(false)}
+        />
+      )}
     </div>
   );
-}
+};
+
+export default Home;
